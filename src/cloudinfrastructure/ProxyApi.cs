@@ -52,5 +52,22 @@ public class ProxyApi
 
         });
 
+        // Permissions for invoking the lambda function
+        var lambdaBasePathPermission = new Permission("Permission-BasePath", new PermissionArgs()
+        {
+            Action = "lambda:InvokeFunction",
+            Function = lambda.Arn,
+            Principal = "apigateway.amazonaws.com",
+            SourceArn = Output.Format($"{deployment.ExecutionArn}{stage.StageName}/*/")
+        });
+        // Same permission for the proxy path
+        var lambdaProxyPermission =new Permission("Permission-ProxyPath", new PermissionArgs()
+        {
+            Action = "lambda:InvokeFunction",
+            Function = lambda.Arn,
+            Principal = "apigateway.amazonaws.com",
+            SourceArn = Output.Format($"{deployment.ExecutionArn}{stage.StageName}/*/{{proxy+}}")
+        });
+
     }
 }
