@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace pulumi_aws_serverlessapiexample.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/values")]
     public class ValuesController : ControllerBase
     {
         // GET api/values

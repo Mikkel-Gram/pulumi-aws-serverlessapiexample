@@ -1,6 +1,5 @@
 using Pulumi;
 using Pulumi.Aws.ApiGateway;
-using Pulumi.Aws.ApiGateway.Inputs;
 using Pulumi.Aws.Lambda;
 using Deployment = Pulumi.Aws.ApiGateway.Deployment;
 using Resource = Pulumi.Aws.ApiGateway.Resource;
@@ -8,6 +7,7 @@ using ResourceArgs = Pulumi.Aws.ApiGateway.ResourceArgs;
 
 public class ProxyApi
 {
+    public Stage Stage {get;}
     public ProxyApi(Function lambda)
     {
         var api = new RestApi("api", new RestApiArgs());
@@ -35,7 +35,7 @@ public class ProxyApi
             HttpMethod = "ANY",
             ResourceId = resource.Id,
             RestApi = api.Id
-        });
+        }, new CustomResourceOptions() { DependsOn = { method } });
 
         // Add the deployment and make it depend on the resource, method and integration
         var deployment = new Deployment("Deployment", new DeploymentArgs()
@@ -44,30 +44,21 @@ public class ProxyApi
             RestApi = api.Id
         }, new CustomResourceOptions() { DependsOn = { resource, method, integration } });
 
-        var stage = new Stage("Stage", new StageArgs()
+        Stage = new Stage("Stage", new StageArgs()
         {
             Deployment = deployment.Id,
             RestApi = api.Id,
-            StageName = "api"
+            StageName = "dev"
 
         });
 
         // Permissions for invoking the lambda function
-        var lambdaBasePathPermission = new Permission("Permission-BasePath", new PermissionArgs()
-        {
-            Action = "lambda:InvokeFunction",
-            Function = lambda.Arn,
-            Principal = "apigateway.amazonaws.com",
-            SourceArn = Output.Format($"{deployment.ExecutionArn}{stage.StageName}/*/")
-        });
-        // Same permission for the proxy path
         var lambdaProxyPermission =new Permission("Permission-ProxyPath", new PermissionArgs()
         {
             Action = "lambda:InvokeFunction",
             Function = lambda.Arn,
             Principal = "apigateway.amazonaws.com",
-            SourceArn = Output.Format($"{deployment.ExecutionArn}{stage.StageName}/*/{{proxy+}}")
+            SourceArn = Output.Format($"{deployment.ExecutionArn}{Stage.StageName}/*/{{proxy+}}")
         });
-
     }
 }
